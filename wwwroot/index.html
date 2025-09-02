@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventario</title>
+    <link rel="stylesheet" href="stilo.css">
+</head>
+<body>
+    <div class="contenedor">
+        <h1>Gestión de Inventario</h1>
+
+        <!-- Formulario para agregar/editar producto -->
+        <form id="productForm">
+            <input type="hidden" id="productId"> <!-- Campo oculto para edición -->
+            <input type="text" id="name" placeholder="Nombre del producto" required>
+            <input type="number" id="price" placeholder="Precio" step="0.01" required>
+            <input type="number" id="stock" placeholder="Cantidad en stock" required>
+            <button type="submit">Guardar</button>
+        </form>
+
+        <!-- Tabla para mostrar productos -->
+        <table border="1" id="productsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const apiUrl = "/api/products";
+
+        // Cargar productos al inicio
+        async function loadProducts() {
+            const response = await fetch(apiUrl);
+            const products = await response.json();
+
+            const tbody = document.querySelector("#productsTable tbody");
+            tbody.innerHTML = "";
+
+            products.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.name}</td>
+                        <td>$${p.price.toFixed(2)}</td>
+                        <td>${p.stock}</td>
+                        <td>
+                            <button onclick="editProduct(${p.id}, '${p.name}', ${p.price}, ${p.stock})">Editar</button>
+                            <button onclick="deleteProduct(${p.id})">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Guardar o actualizar producto
+        document.getElementById("productForm").addEventListener("submit", async e => {
+            e.preventDefault();
+
+            const id = document.getElementById("productId").value;
+            const product = {
+                name: document.getElementById("name").value,
+                price: parseFloat(document.getElementById("price").value),
+                stock: parseInt(document.getElementById("stock").value)
+            };
+
+            if (id) {
+                // Actualizar
+                await fetch({apiUrl}/{id}, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(product)
+                });
+            } else {
+                // Agregar
+                await fetch(apiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(product)
+                });
+            }
+
+            e.target.reset();
+            document.getElementById("productId").value = "";
+            loadProducts();
+        });
+
+        // Editar producto
+        function editProduct(id, name, price, stock) {
+            document.getElementById("productId").value = id;
+            document.getElementById("name").value = name;
+            document.getElementById("price").value = price;
+            document.getElementById("stock").value = stock;
+        }
+
+        // Eliminar producto
+        async function deleteProduct(id) {
+            if (confirm("¿Seguro que deseas eliminar este producto?")) {
+                await fetch({apiUrl}/{id}, { method: "DELETE" });
+                loadProducts();
+            }
+        }
+
+        loadProducts();
+    </script>
+</body>
+</html>
